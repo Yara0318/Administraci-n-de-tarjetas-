@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#9b78bd">
+<title>Control de mis tarjetas</title>
+<style>
+:root{--lila:#9b78bd;--lila2:#eee5f6;--rosa:#f4dce9;--ink:#30283a;--muted:#766d7e;--bg:#faf7fc;--white:#fff;--line:#e9e1ee;--green:#26734d;--red:#a83d55}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:linear-gradient(120deg,#9b78bd,#c69cbd);color:white;padding:24px 18px 30px;border-radius:0 0 25px 25px}
+.wrap{max-width:920px;margin:auto;padding:0 15px}h1{font-size:25px;margin:0 0 5px}header p{margin:0;opacity:.95}
+main{padding:18px 0 40px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:-5px}
+.stat,.panel,.card{background:white;border:1px solid var(--line);border-radius:17px;padding:15px;box-shadow:0 3px 12px #49345c0b}
+.stat small{color:var(--muted);display:block}.stat strong{font-size:20px;display:block;margin-top:4px}
+.tabs{display:flex;gap:8px;overflow:auto;margin:20px 0 14px}.tab{border:1px solid var(--line);background:white;border-radius:30px;padding:10px 15px;color:var(--ink);white-space:nowrap;font-weight:600}.tab.active{background:var(--lila);color:white;border-color:var(--lila)}
+h2{font-size:19px;margin:0 0 14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}.field label{font-size:13px;color:var(--muted);font-weight:600}
+input,select,textarea{width:100%;border:1px solid #ded4e5;border-radius:11px;padding:11px;background:white;color:var(--ink);font:inherit;min-width:0}
+button{border:0;border-radius:11px;padding:11px 15px;background:var(--lila);color:white;font:600 14px system-ui;cursor:pointer}
+button.secondary{background:var(--lila2);color:#63467e}button.danger{background:#f9e8ed;color:var(--red)}button.small{padding:7px 10px;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px}.card h3{margin:0 0 5px}.muted{color:var(--muted);font-size:13px}.amount{font-size:21px;font-weight:750;margin:8px 0}.pill{display:inline-block;border-radius:30px;padding:4px 9px;background:var(--lila2);color:#674b80;font-size:12px;font-weight:650}
+.list{display:flex;flex-direction:column;gap:9px}.purchase{border:1px solid var(--line);border-radius:13px;padding:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}.purchase strong{display:block}.purchase .right{text-align:right;white-space:nowrap}
+.empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed #d8cadd;border-radius:14px}
+.notice{background:#fff7e8;border:1px solid #f0dfbd;padding:11px;border-radius:12px;color:#765a25;font-size:13px;margin-bottom:12px}
+@media(max-width:600px){.summary{grid-template-columns:1fr 1fr}.summary .stat:last-child{grid-column:span 2}.grid{grid-template-columns:1fr}.purchase{align-items:flex-start}.purchase .right{white-space:normal}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>Mis tarjetas 💳</h1><p>Registra tus compras y ten a la vista tus fechas de corte y pago.</p></div></header>
+<main class="wrap">
+<section class="summary">
+ <div class="stat"><small>Total de compras registradas</small><strong id="total">$0.00</strong></div>
+ <div class="stat"><small>Tarjetas registradas</small><strong id="count">0</strong></div>
+ <div class="stat"><small>Compras del periodo actual</small><strong id="period">$0.00</strong></div>
+</section>
+<nav class="tabs">
+ <button class="tab active" data-tab="dashboard">Resumen</button><button class="tab" data-tab="cards">Mis tarjetas</button><button class="tab" data-tab="addcard">Agregar tarjeta</button><button class="tab" data-tab="addpurchase">Registrar compra</button><button class="tab" data-tab="purchases">Mis compras</button>
+</nav>
+<section id="dashboard" class="view">
+ <h2>Resumen de tus tarjetas</h2><div id="dashboardCards" class="cards"></div>
+</section>
+<section id="cards" class="view hidden">
+ <h2>Mis tarjetas</h2><div id="cardList" class="cards"></div>
+</section>
+<section id="addcard" class="view hidden">
+ <div class="panel"><h2 id="cardFormTitle">Agregar una tarjeta</h2>
+ <form id="cardForm">
+  <input type="hidden" id="cardId">
+  <div class="field"><label for="cardName">Nombre de la tarjeta</label><input id="cardName" placeholder="Ej. Mi tarjeta principal" required></div>
+  <div class="grid">
+   <div class="field"><label for="cutDay">Día de corte (1–31)</label><input id="cutDay" type="number" min="1" max="31" placeholder="Ej. 9" required></div>
+   <div class="field"><label for="payDay">Día límite de pago (1–31)</label><input id="payDay" type="number" min="1" max="31" placeholder="Ej. 29" required></div>
+  </div>
+  <div class="field"><label for="creditLimit">Límite de crédito (opcional)</label><input id="creditLimit" type="number" min="0" step="0.01" placeholder="Ej. 15000"></div>
+  <div class="actions"><button type="submit">Guardar tarjeta</button><button type="button" class="secondary" id="cancelEdit">Cancelar</button></div>
+ </form></div>
+</section>
+<section id="addpurchase" class="view hidden">
+ <div class="panel"><h2>Registrar una compra</h2>
+ <form id="purchaseForm">
+  <div class="field"><label for="purchaseCard">Tarjeta</label><select id="purchaseCard" required></select></div>
+  <div class="field"><label for="description">¿Qué compraste?</label><input id="description" placeholder="Ej. Despensa, ropa, gasolina..." required></div>
+  <div class="grid">
+   <div class="field"><label for="purchaseAmount">Importe ($)</label><input id="purchaseAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></div>
+   <div class="field"><label for="purchaseDate">Fecha de compra</label><input id="purchaseDate" type="date" required></div>
+  </div>
+  <div class="field"><label for="notes">Notas (opcional)</label><input id="notes" placeholder="Ej. Compra a meses, referencia..."></div>
+  <button type="submit">Guardar compra</button>
+ </form></div>
+</section>
+<section id="purchases" class="view hidden">
+ <h2>Historial de compras</h2>
+ <div class="grid">
+  <div class="field"><label for="filterCard">Filtrar por tarjeta</label><select id="filterCard"><option value="">Todas las tarjetas</option></select></div>
+  <div class="field"><label for="filterMonth">Filtrar por mes de compra</label><input id="filterMonth" type="month"></div>
+ </div>
+ <div id="purchaseList" class="list"></div>
+</section>
+<section class="panel" style="margin-top:18px">
+ <h2>Respaldo de tus datos</h2><p class="muted">Tus registros se guardan en este dispositivo y navegador. Descarga un respaldo para conservarlos si cambias de celular o navegador.</p>
+ <div class="actions"><button class="secondary" id="exportBtn">Descargar respaldo</button><button class="secondary" id="importBtn">Importar respaldo</button><input id="importFile" type="file" accept="application/json" class="hidden"></div>
+</section>
+</main>
+<script>
+const KEY='mis_tarjetas_credito_v1';
+let data={cards:[],purchases:[]};
+try{data=JSON.parse(localStorage.getItem(KEY))||data}catch(e){}
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(n)||0);
+const today=()=>new Date().toISOString().slice(0,10);
+const save=()=>{localStorage.setItem(KEY,JSON.stringify(data));render()};
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function cardById(id){return data.cards.find(c=>c.id===id)}
+function dateAt(y,m,d){const last=new Date(y,m+1,0).getDate();return new Date(y,m,Math.min(d,last))}
+function statementDates(p,c){
+ const d=new Date(p.date+'T12:00:00');let close=dateAt(d.getFullYear(),d.getMonth()+(d.getDate()>c.cut?1:0),c.cut);
+ let due=dateAt(close.getFullYear(),close.getMonth()+(c.pay<=c.cut?1:0),c.pay);
+ return {close,due};
+}
+function fmt(d){return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}
+function render(){
+ const total=data.purchases.reduce((s,p)=>s+Number(p.amount),0);
+ $('total').textContent=money(total);$('count').textContent=data.cards.length;
+ const month=new Date().toISOString().slice(0,7);
+ $('period').textContent=money(data.purchases.filter(p=>p.date.startsWith(month)).reduce((s,p)=>s+Number(p.amount),0));
+ $('dashboardCards').innerHTML=data.cards.length?data.cards.map(c=>{
+  const spent=data.purchases.filter(p=>p.cardId===c.id).reduce((s,p)=>s+Number(p.amount),0);
+  const recent=data.purchases.filter(p=>p.cardId===c.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  return `<article class="card"><h3>${safe(c.name)}</h3><span class="pill">Corte: día ${c.cut} · Pago: día ${c.pay}</span><div class="amount">${money(spent)}</div><div class="muted">Total histórico registrado${c.limit?` · Límite: ${money(c.limit)}`:''}</div>${recent.length?'<hr style="border:0;border-top:1px solid var(--line);margin:12px 0">'+recent.map(p=>`<div class="muted">${safe(p.description)} · ${money(p.amount)}</div>`).join(''):'<p class="muted">Aún no hay compras.</p>'}</article>`
+ }).join(''):'<div class="empty">Todavía no agregas tarjetas. Empieza en “Agregar tarjeta”.</div>';
+ $('cardList').innerHTML=data.cards.length?data.cards.map(c=>`<article class="card"><h3>${safe(c.name)}</h3><p class="muted">Corte: día <b>${c.cut}</b><br>Límite de pago: día <b>${c.pay}</b><br>${c.limit?'Límite de crédito: '+money(c.limit):'Sin límite de crédito configurado'}</p><div class="actions"><button class="secondary small" onclick="editCard('${c.id}')">Editar</button><button class="danger small" onclick="deleteCard('${c.id}')">Eliminar</button></div></article>`).join(''):'<div class="empty">No tienes tarjetas registradas.</div>';
+ const options=data.cards.map(c=>`<option value="${c.id}">${safe(c.name)}</option>`).join('');
+ $('purchaseCard').innerHTML=options||'<option value="">Primero agrega una tarjeta</option>';
+ $('filterCard').innerHTML='<option value="">Todas las tarjetas</option>'+options;
+ const fc=$('filterCard').value, fm=$('filterMonth').value;
+ const ps=data.purchases.filter(p=>(!fc||p.cardId===fc)&&(!fm||p.date.startsWith(fm))).sort((a,b)=>b.date.localeCompare(a.date));
+ $('purchaseList').innerHTML=ps.length?ps.map(p=>{const c=cardById(p.cardId);const dates=c?statementDates(p,c):null;return `<article class="purchase"><div><strong>${safe(p.description)}</strong><div class="muted">${safe(c?.name||'Tarjeta eliminada')} · Compra: ${fmt(new Date(p.date+'T12:00:00'))}</div>${dates?`<div class="muted">Corte estimado: ${fmt(dates.close)} · Pago estimado: ${fmt(dates.due)}</div>`:''}${p.notes?`<div class="muted">${safe(p.notes)}</div>`:''}</div><div class="right"><strong>${money(p.amount)}</strong><button class="danger small" style="margin-top:7px" onclick="deletePurchase('${p.id}')">Eliminar</button></div></article>`}).join(''):'<div class="empty">No hay compras que mostrar.</div>';
+}
+function tab(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));if(name==='addpurchase'&&!$('purchaseDate').value)$('purchaseDate').value=today()}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.tab)));
+$('cardForm').addEventListener('submit',e=>{e.preventDefault();const id=$('cardId').value;const c={id:id||crypto.randomUUID(),name:$('cardName').value.trim(),cut:Number($('cutDay').value),pay:Number($('payDay').value),limit:Number($('creditLimit').value)||0};if(!c.name||c.cut<1||c.cut>31||c.pay<1||c.pay>31)return alert('Revisa el nombre y los días (deben estar entre 1 y 31).');if(id)data.cards=data.cards.map(x=>x.id===id?c:x);else data.cards.push(c);$('cardForm').reset();$('cardId').value='';$('cardFormTitle').textContent='Agregar una tarjeta';save();tab('cards')});
+function editCard(id){const c=cardById(id);if(!c)return;$('cardId').value=c.id;$('cardName').value=c.name;$('cutDay').value=c.cut;$('payDay').value=c.pay;$('creditLimit').value=c.limit||'';$('cardFormTitle').textContent='Editar tarjeta';tab('addcard')}
+function deleteCard(id){if(!confirm('¿Eliminar esta tarjeta? Las compras registradas se conservarán en el historial.'))return;data.cards=data.cards.filter(c=>c.id!==id);save()}
+function deletePurchase(id){if(!confirm('¿Eliminar esta compra?'))return;data.purchases=data.purchases.filter(p=>p.id!==id);save()}
+$('cancelEdit').onclick=()=>{$('cardForm').reset();$('cardId').value='';$('cardFormTitle').textContent='Agregar una tarjeta';tab('cards')};
+$('purchaseForm').addEventListener('submit',e=>{e.preventDefault();if(!data.cards.length)return alert('Primero agrega una tarjeta.');data.purchases.push({id:crypto.randomUUID(),cardId:$('purchaseCard').value,description:$('description').value.trim(),amount:Number($('purchaseAmount').value),date:$('purchaseDate').value,notes:$('notes').value.trim()});$('purchaseForm').reset();$('purchaseDate').value=today();save();tab('purchases')});
+$('filterCard').onchange=render;$('filterMonth').onchange=render;
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respaldo-mis-tarjetas.json';a.click();URL.revokeObjectURL(a.href)};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.cards)||!Array.isArray(x.purchases))throw Error();if(confirm('Importar reemplazará los datos actuales. ¿Continuar?')){data=x;save();alert('Respaldo importado.')}}catch(err){alert('El archivo no parece ser un respaldo válido.')}e.target.value=''};
+render();
+</script>
+</body></html>
